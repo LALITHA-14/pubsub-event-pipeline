@@ -1,0 +1,46 @@
+services:
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: pubsub-producer
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /var/secrets/gcp/application_default_credentials.json
+    volumes:
+      - ${APPDATA}/gcloud/application_default_credentials.json:/var/secrets/gcp/application_default_credentials.json:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os; assert os.getenv('GCP_PROJECT_ID')"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  consumer:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: pubsub-consumer
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /var/secrets/gcp/application_default_credentials.json
+    volumes:
+      - ${APPDATA}/gcloud/application_default_credentials.json:/var/secrets/gcp/application_default_credentials.json:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os; assert os.getenv('GCP_PROJECT_ID') and os.getenv('PUBSUB_SUBSCRIPTION_ID')"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
